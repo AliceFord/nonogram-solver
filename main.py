@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import time
 
-N = 20
+N = 15
 
 T0 = 0
 
@@ -11,9 +11,9 @@ def prettyPrintBoard(board):
 
     for row in np.array(board).T:
         for item in row:
-            if item == -1:
+            if (~item & 0b10):
                 print("?", end='')
-            elif item == 0:
+            elif (~item & 0b1):
                 print("x", end='')
             else:
                 print("█", end='')
@@ -48,7 +48,7 @@ def isvalid(board, rows, cols):
         current = 0
         brokenOut = False
         for item in boardRow:
-            if item == -1:
+            if (~item & 0b10):
                 if current != 0:
                     if current <= ruleRow[ruleCounter]:
                         brokenOut = True
@@ -58,7 +58,7 @@ def isvalid(board, rows, cols):
                 else:
                     brokenOut = True
                     break
-            elif item == 1:
+            elif (item & 0b1):
                 current += 1
             else:
                 if current != 0:
@@ -80,7 +80,7 @@ def isvalid(board, rows, cols):
         current = 0
         brokenOut = False
         for item in boardRow:
-            if item == -1:
+            if (~item & 0b10):
                 if current != 0:
                     if current <= ruleRow[ruleCounter]:
                         brokenOut = True
@@ -90,7 +90,7 @@ def isvalid(board, rows, cols):
                 else:
                     brokenOut = True
                     break
-            elif item == 1:
+            elif (item & 0b1):
                 current += 1
             else:
                 if current != 0:
@@ -107,7 +107,6 @@ def isvalid(board, rows, cols):
                 return False
 
     return True
-
 
 def recur(board, rows, cols, currentPos):
     """
@@ -134,13 +133,13 @@ def recur(board, rows, cols, currentPos):
     row = currentPos % N
     col = currentPos // N
 
-    board[row][col] = 1
+    board[row][col] = 0b11
     worked = isvalid(board, rows, cols)
     if worked:
         recur(board, rows, cols, currentPos + 1)
         
         # later...
-        board[row][col] = 0
+        board[row][col] = 0b10
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
@@ -149,10 +148,10 @@ def recur(board, rows, cols, currentPos):
         #     return
         
         # later...
-        board[row][col] = -1
+        board[row][col] = 0b00
         return
     else:
-        board[row][col] = 0
+        board[row][col] = 0b10
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
@@ -161,17 +160,25 @@ def recur(board, rows, cols, currentPos):
         #     return
 
         # later...
-        board[row][col] = -1
+        board[row][col] = 0b00
         return
 
     
 def solve():
     global T0
+
+    """
+    Board bits:
+    high-1: visited (1) / not visited (0)
+    high: on (1) / off (0)
+    """
+    
+    # board = np.zeros((N, N), np.int8)
     board = []
     for _ in range(N):
         board.append([])
         for _ in range(N):
-            board[-1].append(-1)
+            board[-1].append(0)  # TODO: change to numpy
 
     # board[0][0] = 1
     # board[1][0] = 1
@@ -185,13 +192,13 @@ def solve():
 
     # board = [[1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [0, -1, -1, -1, -1, -1, -1, -1, -1, -1], [0, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]]
 
-    # rows = rowColParse("7,5,2 5 2,4 5 4,1 9 1,1 9 1,1 11 1,15,13,11,11,9,9,7,5")
-    # cols = rowColParse("5,2 2,2 5,10,1 10,15,15,15,15,15,1 10,10,2 5,2 2,5")
+    rows = rowColParse("7,5,2 5 2,4 5 4,1 9 1,1 9 1,1 11 1,15,13,11,11,9,9,7,5")
+    cols = rowColParse("5,2 2,2 5,10,1 10,15,15,15,15,15,1 10,10,2 5,2 2,5")
 
     
 
-    rows = rowColParse("6,2 9,6 1 1 1,4 1 5,2 5,1 1 4,2 4 2 3,3 3 1 4,2 2 2 4,1 1 2 3,4 2 3 3,2 2 2 1 2,1 1 2 3 1,2 1 3 2 1,3 2 2 2 3,5 2 2 3,5 2 2 2,7 3 5,1 3 9,3 9")
-    cols = rowColParse("6,2 2 2,1 1 1,2 2 2 2,5 3 1,4 1 3 1,3 2 4 1,2 3 8,2 3 3,3 2 2,2 1 1 2,3 7,2 2 3 4,3 9 3,2 1 3 3 2,1 2 3 5,1 6 2 3,9 4 3,9 6,2 13")
+    # rows = rowColParse("6,2 9,6 1 1 1,4 1 5,2 5,1 1 4,2 4 2 3,3 3 1 4,2 2 2 4,1 1 2 3,4 2 3 3,2 2 2 1 2,1 1 2 3 1,2 1 3 2 1,3 2 2 2 3,5 2 2 3,5 2 2 2,7 3 5,1 3 9,3 9")
+    # cols = rowColParse("6,2 2 2,1 1 1,2 2 2 2,5 3 1,4 1 3 1,3 2 4 1,2 3 8,2 3 3,3 2 2,2 1 1 2,3 7,2 2 3 4,3 9 3,2 1 3 3 2,1 2 3 5,1 6 2 3,9 4 3,9 6,2 13")
 
     T0 = time.time()
 
@@ -201,7 +208,6 @@ def solve():
     # print(isvalid(board, rows, cols))
 
 
-sys.setrecursionlimit(1000000)
 solve()
 
 # TODO: take image input and make nonogram!!
