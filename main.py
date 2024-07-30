@@ -6,6 +6,15 @@ N = 15
 
 T0 = 0
 
+def T(arr):
+    out = []
+    for i in range(len(arr[0])):
+        out.append([])
+        for j in range(len(arr)):
+            out[-1].append(arr[j][i])
+
+    return out
+
 def prettyPrintBoard(board):
     print("\033[%d;%dH" % (0, 0))
 
@@ -43,7 +52,7 @@ def isvalid(board, rows, cols):
             ensure correct length of previous box, remove current box.
     """
 
-    for boardRow, ruleRow in zip(np.array(board).T, rows):
+    for boardRow, ruleRow in zip(T(board), rows):
         ruleCounter = 0
         current = 0
         brokenOut = False
@@ -116,6 +125,7 @@ def recur(board, rows, cols, currentPos):
     - On failed recursion, return instead of currentPos - 1
     - Fill in row blocks that are guaranteed from t0
     - Fill in row blocks as they're made (6 must be 6, not just 1, so can fill all 6 when attempting to put 1)
+    - isvalid only needs to check current row and col, all else are guaranteed correct
 
     Timings:
     No opt: 7.55s
@@ -133,7 +143,20 @@ def recur(board, rows, cols, currentPos):
     row = currentPos % N
     col = currentPos // N
 
+    # blocks:
+    # rowData = T(board)[col]
+    # rowRule = rows[col]
+    # rc = 0
+    # current = 0
+
+    # for item in rowData:
+    #     if item & 0b
+
+    # print(rowData, rowRule)
+
     board[row][col] = 0b11
+
+    # recur:
     worked = isvalid(board, rows, cols)
     if worked:
         recur(board, rows, cols, currentPos + 1)
@@ -143,9 +166,6 @@ def recur(board, rows, cols, currentPos):
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
-        # else:
-        #     board[row][col] = -1
-        #     return
         
         # later...
         board[row][col] = 0b00
@@ -155,9 +175,6 @@ def recur(board, rows, cols, currentPos):
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
-        # else:
-        #     board[row][col] = -1
-        #     return
 
         # later...
         board[row][col] = 0b00
