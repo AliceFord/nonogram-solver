@@ -120,7 +120,7 @@ def recur(board, rows, cols, currentPos):
 
     Timings:
     No opt: 7.55s
-    Recur: 
+    Recur: 7.88s (oof but it has to be done :p)
     """
     # print(currentPos)
     # prettyPrintBoard(board)
@@ -134,32 +134,35 @@ def recur(board, rows, cols, currentPos):
     row = currentPos % N
     col = currentPos // N
 
-    current = board[row][col]
-
-    if current == 0:  # visited twice
-        board[row][col] = -1
-        recur(board, rows, cols, currentPos - 1)
-    elif current == 1:  # visited once
+    board[row][col] = 1
+    worked = isvalid(board, rows, cols)
+    if worked:
+        recur(board, rows, cols, currentPos + 1)
+        
+        # later...
         board[row][col] = 0
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
-        else:
-            board[row][col] = -1
-            recur(board, rows, cols, currentPos - 1)
-    elif current == -1:  # first visit
-        board[row][col] = 1
+        # else:
+        #     board[row][col] = -1
+        #     return
+        
+        # later...
+        board[row][col] = -1
+        return
+    else:
+        board[row][col] = 0
         worked = isvalid(board, rows, cols)
         if worked:
             recur(board, rows, cols, currentPos + 1)
-        else:
-            board[row][col] = 0
-            worked = isvalid(board, rows, cols)
-            if worked:
-                recur(board, rows, cols, currentPos + 1)
-            else:
-                board[row][col] = -1
-                recur(board, rows, cols, currentPos - 1)
+        # else:
+        #     board[row][col] = -1
+        #     return
+
+        # later...
+        board[row][col] = -1
+        return
 
     
 def solve():
