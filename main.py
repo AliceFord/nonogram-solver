@@ -213,6 +213,20 @@ def preprocessing(board, rows, cols):
                     pos += 1
                 except IndexError:
                     break  # should already break, just for safety (and silent crashing D:)
+        else:
+            # b0 overlap
+            b0posA = rowRule[0] - 1
+            b0posB = N - (sum(rowRule) + len(rowRule) - 2)
+            if b0posB < b0posA:
+                for j in range(b0posB, b0posA + 1):
+                    board[j][i] = 0b111
+            
+            #bn-1 overlap
+            bnm1posA = N - rowRule[-2]
+            bnm1posB = sum(rowRule) + len(rowRule) - 3
+            if bnm1posA < bnm1posB:
+                for j in range(bnm1posA, bnm1posB + 1):
+                    board[j][i] = 0b111
 
     for i in range(len(cols)):
         rowRule = cols[i]
@@ -229,6 +243,23 @@ def preprocessing(board, rows, cols):
                     pos += 1
                 except IndexError:
                     break  # should already break, just for safety (and silent crashing D:)
+        
+        else:
+            # b0 overlap
+            b0posA = rowRule[0] - 1
+            b0posB = N - (sum(rowRule) + len(rowRule) - 2)
+            if b0posB < b0posA:
+                for j in range(b0posB, b0posA + 1):
+                    board[i][j] = 0b111
+            
+            #bn-1 overlap
+            bnm1posA = N - rowRule[-2]
+            bnm1posB = sum(rowRule) + len(rowRule) - 3
+            if bnm1posA < bnm1posB:
+                for j in range(bnm1posA, bnm1posB + 1):
+                    board[i][j] = 0b111
+
+    # quit()
 
 def recur(board, rows, cols, currentPos):
     """
@@ -236,13 +267,9 @@ def recur(board, rows, cols, currentPos):
     
     Optimisations:
     [x] On failed recursion, return instead of currentPos - 1
-    [] Fill in row blocks that are guaranteed from t0
+    [x] Fill in row blocks that are guaranteed from t0 (80% improvement!)
     [] Fill in row blocks as they're made (6 must be 6, not just 1, so can fill all 6 when attempting to put 1)
     [x] isValid only needs to check current row and col, all else are guaranteed correct
-
-    Timings:
-    No opt: 7.55s
-    Recur: 7.88s (oof but it has to be done :p)
     """
     global N, T0
 
@@ -305,6 +332,7 @@ def solve():
 
     """
     Board bits:
+    high-3: part of bandboxed segment
     high-2: constant (definitely correct) (1) / not constant (0)
     high-1: visited (1) / not visited (0)
     high: on (1) / off (0)
@@ -340,10 +368,10 @@ def solve():
             board[-1].append(0)  # TODO: change to numpy
 
     preprocessing(board, rows, cols)
-    prettyPrintBoard(board)
-    quit()
+    # prettyPrintBoard(board)
+    # quit()
 
-    # recur(board, rows, cols, 0)
+    recur(board, rows, cols, 0)
 
     # prettyPrintBoard(board)
     # print(isvalid(board, rows, cols))
