@@ -15,7 +15,7 @@ def T(arr):
 
     return out
 
-def prettyPrintBoard(board, rows=None):
+def prettyPrintBoard(board, rows=None, cols=None):
     print("\033[%d;%dH" % (0, 0))
 
     for i, row in enumerate(T(board)):
@@ -286,8 +286,8 @@ def getRowRule(board, rows, col):
             if current != 0:
                 rc += 1
                 current = 0
-
-    return rowRule[rc], (current == 0) and (rc < len(rows[col]) - 1)
+    
+    return rowRule[rc], (current == 0) and (rc < len(rows[col]) - 1), rc == len(rowRule) - 2  # -2 because of how the later bit works
 
 def recur(board, rows, cols, currentPos):
     """
@@ -302,7 +302,7 @@ def recur(board, rows, cols, currentPos):
     global N, T0
 
     # print(currentPos)
-    # prettyPrintBoard(board, rows)
+    prettyPrintBoard(board, rows)
 
     # while True:
     #     with keyboard.Events() as events:
@@ -328,7 +328,7 @@ def recur(board, rows, cols, currentPos):
         return
 
     # blocks:
-    rowRule, doit = getRowRule(board, rows, col)
+    rowRule, doit, endOfRowFlag = getRowRule(board, rows, col)
     
     addOn = 1
     
@@ -349,11 +349,17 @@ def recur(board, rows, cols, currentPos):
     if doit:
         for i in range(row, row + rowRule):
             board[i][col] = 0b1011
-        
-        try:
-            board[row + rowRule][col] = 0b1010
-        except IndexError:
-            pass
+
+        if endOfRowFlag:
+            for i in range(row + rowRule, N):
+                board[i][col] = 0b1010
+            
+            addOn += N - row - rowRule - 1
+        else:
+            try:
+                board[row + rowRule][col] = 0b1010
+            except IndexError:
+                pass
         
         addOn += rowRule
     else:
@@ -364,14 +370,12 @@ def recur(board, rows, cols, currentPos):
     # worked = isFullyValid(board, rows, cols)
     if worked:
         recur(board, rows, cols, currentPos + addOn)
-    # else:
-    #     doit = False
-        
+
     # later...
     board[row][col] = 0b10
     if doit:
         # time.sleep(2)
-        for i in range(row + 1, row + rowRule + 1):
+        for i in range(row + 1, row + addOn):
             try:
                 board[i][col] = 0b0
             except IndexError:
@@ -432,7 +436,7 @@ def solve():
             board[-1].append(0)  # TODO: change to numpy
 
     preprocessing(board, rows, cols)
-    # prettyPrintBoard(board)
+    # prettyPrintBoard(board, rows, cols)
     # quit()
 
     recur(board, rows, cols, 0)
