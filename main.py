@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import time
+from pynput import keyboard
 
 N = 0
 T0 = 0
@@ -14,10 +15,10 @@ def T(arr):
 
     return out
 
-def prettyPrintBoard(board):
+def prettyPrintBoard(board, rows=None):
     print("\033[%d;%dH" % (0, 0))
 
-    for row in np.array(board).T:
+    for i, row in enumerate(T(board)):
         for item in row:
             if (~item & 0b10):
                 print("?", end='')
@@ -25,7 +26,11 @@ def prettyPrintBoard(board):
                 print("x", end='')
             else:
                 print("█", end='')
-        print(' ' * 20)
+        
+        print(' ', end='')
+        if rows is not None:
+            print(rows[i], end='')
+        print(' ' * 19)
 
 def rowColParse(inputStr):
     output = []
@@ -261,6 +266,24 @@ def preprocessing(board, rows, cols):
 
     # quit()
 
+def getRowRule(board, rows, col):
+    rowData = T(board)[col]
+    rowRule = rows[col]
+    rc = 0
+    current = 0
+
+    for item in rowData:
+        if ~item & 0b10:
+            break
+        elif item & 0b1:
+            current += 1
+        else:
+            if current != 0:
+                rc += 1
+                current = 0
+
+    return rowRule[rc], (current == 0) and (rc < len(rows[col]) - 1)
+
 def recur(board, rows, cols, currentPos):
     """
     Init: new recur for every step
@@ -274,7 +297,14 @@ def recur(board, rows, cols, currentPos):
     global N, T0
 
     # print(currentPos)
-    # prettyPrintBoard(board)
+    # prettyPrintBoard(board, rows)
+
+    # while True:
+    #     with keyboard.Events() as events:
+    #         event = events.get(1e6)
+    #         if type(event) is keyboard.Events.Release:
+    #             break
+
 
     if currentPos == N**2:
         prettyPrintBoard(board)
@@ -285,46 +315,72 @@ def recur(board, rows, cols, currentPos):
     row = currentPos % N
     col = currentPos // N
 
-    # blocks:
-    # rowData = T(board)[col]
-    # rowRule = rows[col]
-    # rc = 0
-    # current = 0
-
-    # for item in rowData:
-    #     if item & 0b
-
-    # print(rowData, rowRule)
+    # print(row, ' ' * 20)
+    # print(col, ' ' * 20)
 
     if board[row][col] & 0b100:  # if its definitely correct then leave it alone
         recur(board, rows, cols, currentPos + 1)
         return
 
-    board[row][col] = 0b11
+    # blocks:
+    rowRule, doit = getRowRule(board, rows, col)
+    
+    addOn = 1
+    
+    if doit:
+        for i in range(row, row + rowRule):
+            try:
+                if board[i][col] != 0b0:
+                    doit = False
+            except IndexError:
+                doit = False
+        
+        try:
+            if board[row + rowRule][col] != 0b0:
+                doit = False
+        except IndexError:
+            addOn -= 1
+
+    if doit:
+        for i in range(row, row + rowRule):
+            board[i][col] = 0b1011
+        
+        try:
+            board[row + rowRule][col] = 0b1010
+        except IndexError:
+            pass
+        
+        addOn += rowRule
+    else:
+        board[row][col] = 0b11
 
     # recur:
-    worked = isValid(board, rows, cols, row, col)
+    # worked = isValid(board, rows, cols, row, col)
+    worked = isFullyValid(board, rows, cols)
+    if worked:
+        recur(board, rows, cols, currentPos + addOn)
+    # else:
+    #     doit = False
+        
+    # later...
+    board[row][col] = 0b10
+    if doit:
+        # time.sleep(2)
+        for i in range(row + 1, row + rowRule + 1):
+            try:
+                board[i][col] = 0b0
+            except IndexError:
+                pass
+
+
+    worked = isFullyValid(board, rows, cols)
     if worked:
         recur(board, rows, cols, currentPos + 1)
-        
-        # later...
-        board[row][col] = 0b10
-        worked = isValid(board, rows, cols, row, col)
-        if worked:
-            recur(board, rows, cols, currentPos + 1)
-        
-        # later...
-        board[row][col] = 0b00
-        return
-    else:
-        board[row][col] = 0b10
-        worked = isValid(board, rows, cols, row, col)
-        if worked:
-            recur(board, rows, cols, currentPos + 1)
+    
+    # later...
+    board[row][col] = 0b00
+    return
 
-        # later...
-        board[row][col] = 0b00
-        return
 
     
 def solve():
@@ -332,7 +388,7 @@ def solve():
 
     """
     Board bits:
-    high-3: part of bandboxed segment
+    high-3: part of bandboxed segment (1) / not part of bandboxed segment (0)  - NOT NEEDED!!
     high-2: constant (definitely correct) (1) / not constant (0)
     high-1: visited (1) / not visited (0)
     high: on (1) / off (0)
