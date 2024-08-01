@@ -9,8 +9,9 @@ T0 = 0
 def T(arr):
     return list(zip(*arr))
 
-def prettyPrintBoard(board, rows=None):
-    print("\033[%d;%dH" % (0, 0))
+def prettyPrintBoard(board, rows=None, cols=None, jump=True):
+    if jump:
+        print("\033[%d;%dH" % (0, 0))
 
     for i, row in enumerate(T(board)):
         for item in row:
@@ -25,6 +26,17 @@ def prettyPrintBoard(board, rows=None):
         if rows is not None:
             print(rows[i], end='')
         print(' ' * 19)
+
+    if cols is not None:
+        for i in range(max(map(len, cols))):
+            for j, col in enumerate(cols):
+                try:
+                    if i == len(col) - 1:
+                        raise IndexError  # (lol)
+                    print(col[i], end='')
+                except IndexError:
+                    print(' ', end='')
+            print()
 
 def rowColParse(inputStr):
     output = []
@@ -264,6 +276,95 @@ def preprocessing(board, rows, cols):
                 for j in range(bnm1posA, bnm1posB + 1):
                     board[i][j] = 0b111
 
+    for i in range(len(rows)):  # we go agane
+        rowRule = rows[i]
+        totalDist = sum(rowRule) + len(rowRule) - 2
+        if 0 < totalDist < N:
+            # b0
+            rule = rowRule[0]
+
+            b0 = -1
+            p0 = -1
+            start = True
+            for j in range(rule):
+                if board[j][i] == 0b111 and start:
+                    start = False
+                    p0 = j
+                elif board[j][i] == 0b110:
+                    b0 = j
+
+            if p0 != -1:
+                for j in range(p0, rule + b0 + 1):  # eek
+                    board[j][i] = 0b111
+
+                if p0 == 0:
+                    board[rule + b0 + 1][i] = 0b110
+                
+            # bn-1
+            rule = rowRule[-2]
+
+            bnm1 = -1
+            pnm1 = -1
+            start = True
+            for j in range(N - 1, N - rule - 1, -1):
+                if board[j][i] == 0b111 and start:
+                    start = False
+                    pnm1 = j
+                elif board[j][i] == 0b110:
+                    bnm1 = j
+            
+            if pnm1 != -1:
+                for j in range(pnm1, N - rule - bnm1 - 2, -1):
+                    board[j][i] = 0b111
+                
+                if pnm1 == N - 1:
+                    board[N - rule - bnm1 - 2][i] = 0b110
+
+    for i in range(len(cols)):  # we go agane
+        rowRule = cols[i]
+        totalDist = sum(rowRule) + len(rowRule) - 2
+        if 0 < totalDist < N:
+            # b0
+            rule = rowRule[0]
+
+            b0 = -1
+            p0 = -1
+            start = True
+            for j in range(rule):
+                if board[i][j] == 0b111 and start:
+                    start = False
+                    p0 = j
+                elif board[i][j] == 0b110:
+                    b0 = j
+
+            if p0 != -1:
+                for j in range(p0, rule + b0 + 1):  # eek
+                    board[i][j] = 0b111
+                
+                if p0 == 0:
+                    board[rule + b0 + 1][i] = 0b110
+
+            # bn-1
+            rule = rowRule[-2]
+
+            bnm1 = -1
+            pnm1 = -1
+            start = True
+            for j in range(N - 1, N - rule - 1, -1):
+                if board[i][j] == 0b111 and start:
+                    start = False
+                    pnm1 = j
+                elif board[i][j] == 0b110:
+                    bnm1 = j
+            
+            if pnm1 != -1:
+                for j in range(pnm1, N - rule - bnm1 - 2, -1):
+                    board[i][j] = 0b111
+
+                if pnm1 == N - 1:
+                    board[i][N - rule - bnm1 - 2] = 0b110
+
+
     # quit()
 
 def getRowRule(board, rows, col):
@@ -294,6 +395,8 @@ def recur(board, rows, cols, currentPos):
     [x] Fill in row blocks that are guaranteed from t0 (80% improvement!)
     [x] Fill in row blocks as they're made (6 must be 6, not just 1, so can fill all 6 when attempting to put 1)
     [x] isValid only needs to check current row and col, all else are guaranteed correct
+
+    TODO: more preprocessing can be done, use `py -m cProfile -s time .\main.py`
     """
     global N, T0
 
@@ -344,10 +447,10 @@ def recur(board, rows, cols, currentPos):
 
     if doit:
         for i in range(row, row + rowRule):
-            board[i][col] = 0b1011
+            board[i][col] = 0b11
         
         try:
-            board[row + rowRule][col] = 0b1010
+            board[row + rowRule][col] = 0b10
         except IndexError:
             pass
         
@@ -389,7 +492,6 @@ def solve():
 
     """
     Board bits:
-    high-3: part of bandboxed segment (1) / not part of bandboxed segment (0)  - NOT NEEDED!!
     high-2: constant (definitely correct) (1) / not constant (0)
     high-1: visited (1) / not visited (0)
     high: on (1) / off (0)
@@ -410,11 +512,11 @@ def solve():
     # rows = rowColParse("7,5,2 5 2,4 5 4,1 9 1,1 9 1,1 11 1,15,13,11,11,9,9,7,5")
     # cols = rowColParse("5,2 2,2 5,10,1 10,15,15,15,15,15,1 10,10,2 5,2 2,5")
 
-    # rows = rowColParse("6,2 9,6 1 1 1,4 1 5,2 5,1 1 4,2 4 2 3,3 3 1 4,2 2 2 4,1 1 2 3,4 2 3 3,2 2 2 1 2,1 1 2 3 1,2 1 3 2 1,3 2 2 2 3,5 2 2 3,5 2 2 2,7 3 5,1 3 9,3 9")
-    # cols = rowColParse("6,2 2 2,1 1 1,2 2 2 2,5 3 1,4 1 3 1,3 2 4 1,2 3 8,2 3 3,3 2 2,2 1 1 2,3 7,2 2 3 4,3 9 3,2 1 3 3 2,1 2 3 5,1 6 2 3,9 4 3,9 6,2 13")
+    rows = rowColParse("6,2 9,6 1 1 1,4 1 5,2 5,1 1 4,2 4 2 3,3 3 1 4,2 2 2 4,1 1 2 3,4 2 3 3,2 2 2 1 2,1 1 2 3 1,2 1 3 2 1,3 2 2 2 3,5 2 2 3,5 2 2 2,7 3 5,1 3 9,3 9")
+    cols = rowColParse("6,2 2 2,1 1 1,2 2 2 2,5 3 1,4 1 3 1,3 2 4 1,2 3 8,2 3 3,3 2 2,2 1 1 2,3 7,2 2 3 4,3 9 3,2 1 3 3 2,1 2 3 5,1 6 2 3,9 4 3,9 6,2 13")
 
-    rows = [[50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [14, 18, 16, 0], [12, 14, 12, 0], [10, 13, 11, 0], [9, 12, 10, 0], [7, 11, 10, 0], [5, 10, 9, 0], [5, 10, 3, 8, 0], [5, 9, 5, 8, 0], [5, 9, 5, 8, 0], [5, 1, 1, 9, 6, 8, 0], [5, 3, 8, 6, 7, 0], [5, 4, 9, 7, 8, 0], [11, 8, 7, 7, 0], [10, 8, 7, 7, 0], [10, 8, 7, 7, 0], [11, 8, 8, 7, 0], [10, 8, 7, 7, 0], [11, 8, 7, 1, 7, 0], [10, 8, 8, 7, 0], [10, 8, 7, 7, 0], [11, 8, 7, 7, 0], [10, 8, 7, 7, 0], [11, 8, 7, 1, 7, 0], [10, 8, 7, 8, 0], [10, 8, 7, 7, 0], [11, 9, 6, 8, 0], [10, 8, 6, 8, 0], [11, 9, 5, 8, 0], [10, 9, 3, 9, 0], [10, 10, 1, 1, 9, 0], [11, 10, 10, 0], [10, 11, 10, 0], [11, 11, 11, 0], [10, 13, 13, 0], [12, 2, 14, 1, 1, 13, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0]]
-    cols = [[50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [14, 29, 0], [14, 30, 0], [13, 30, 0], [13, 31, 0], [12, 32, 0], [11, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 7, 0], [11, 7, 0], [10, 1, 6, 0], [10, 7, 0], [9, 7, 0], [10, 6, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [19, 1, 1, 14, 0], [16, 12, 0], [14, 10, 0], [13, 8, 0], [12, 8, 0], [11, 1, 1, 1, 7, 0], [10, 1, 15, 6, 0], [10, 21, 7, 0], [10, 23, 6, 0], [9, 24, 6, 0], [10, 23, 6, 0], [10, 21, 7, 0], [10, 15, 1, 6, 0], [10, 8, 0], [11, 8, 0], [12, 1, 9, 0], [14, 1, 11, 0], [15, 13, 0], [19, 1, 1, 16, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0], [50, 0]]
+    # rows = [[60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [16, 1, 20, 1, 18, 0], [14, 17, 15, 0], [13, 15, 14, 0], [11, 15, 12, 0], [10, 14, 12, 0], [8, 12, 11, 0], [6, 12, 11, 0], [6, 12, 4, 10, 0], [6, 1, 12, 5, 1, 10, 0], [5, 10, 6, 9, 0], [6, 1, 11, 6, 10, 0], [6, 1, 11, 8, 9, 0], [6, 4, 9, 7, 9, 0], [6, 5, 10, 8, 9, 0], [13, 10, 8, 8, 0], [12, 10, 1, 9, 9, 0], [13, 9, 8, 1, 8, 0], [12, 10, 9, 8, 0], [13, 10, 8, 9, 0], [12, 10, 10, 8, 0], [13, 9, 9, 8, 0], [12, 9, 9, 9, 0], [13, 10, 9, 8, 0], [12, 10, 9, 9, 0], [13, 9, 9, 1, 8, 0], [12, 10, 1, 9, 8, 0], [13, 9, 8, 9, 0], [12, 10, 8, 9, 0], [13, 10, 8, 9, 0], [12, 10, 8, 1, 9, 0], [13, 11, 7, 9, 0], [12, 9, 8, 10, 0], [13, 11, 6, 10, 0], [12, 11, 5, 10, 0], [13, 12, 4, 11, 0], [12, 12, 11, 0], [13, 11, 1, 12, 0], [12, 13, 12, 0], [13, 14, 13, 0], [12, 15, 14, 0], [13, 16, 16, 0], [38, 1, 1, 17, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0]]
+    # cols = [[60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [20, 39, 0], [17, 35, 0], [17, 36, 0], [16, 36, 0], [16, 37, 0], [15, 37, 0], [14, 38, 0], [14, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 0], [13, 8, 0], [12, 8, 0], [12, 1, 8, 0], [11, 8, 0], [12, 8, 0], [11, 8, 0], [13, 2, 3, 2, 3, 4, 4, 4, 4, 12, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [31, 3, 24, 0], [23, 1, 17, 0], [20, 15, 0], [17, 12, 0], [16, 11, 0], [15, 1, 1, 10, 0], [14, 9, 0], [13, 1, 1, 1, 1, 8, 0], [12, 1, 17, 1, 8, 0], [12, 24, 8, 0], [12, 28, 7, 0], [11, 28, 8, 0], [12, 28, 7, 0], [11, 28, 8, 0], [12, 26, 7, 0], [12, 21, 8, 0], [12, 1, 1, 2, 2, 1, 9, 0], [13, 9, 0], [14, 1, 10, 0], [14, 1, 11, 0], [16, 13, 0], [18, 1, 1, 15, 0], [20, 1, 18, 0], [25, 1, 1, 1, 1, 23, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0], [60, 0]]
 
     N = len(rows)
 
@@ -428,7 +530,7 @@ def solve():
             board[-1].append(0)  # TODO: change to numpy
 
     preprocessing(board, rows, cols)
-    # prettyPrintBoard(board)
+    # prettyPrintBoard(board, rows, cols, jump=False)
     # quit()
 
     recur(board, rows, cols, 0)

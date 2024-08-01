@@ -10,7 +10,7 @@ im = Image.open(r"C:\Users\olive\OneDrive\Pictures\Screenshots\Screenshot 2024-0
 sqrWidth = np.ceil(np.sqrt(im.size[0]*im.size[1])).astype(int)
 im = im.resize((sqrWidth, sqrWidth))
 
-N = 50
+N = 60
 
 im = im.resize((N, N))
 
