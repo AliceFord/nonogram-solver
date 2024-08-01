@@ -7,13 +7,14 @@ N = 0
 T0 = 0
 
 def T(arr):
-    out = []
-    for i in range(len(arr[0])):
-        out.append([])
-        for j in range(len(arr)):
-            out[-1].append(arr[j][i])
+    return list(zip(*arr))
+    # out = []
+    # for i in range(len(arr[0])):
+    #     out.append([])
+    #     for j in range(len(arr)):
+    #         out[-1].append(arr[j][i])
 
-    return out
+    # return out
 
 def prettyPrintBoard(board, rows=None):
     print("\033[%d;%dH" % (0, 0))
