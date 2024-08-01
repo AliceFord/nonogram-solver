@@ -6,11 +6,11 @@ import numpy as np
 NEGATIVE = True
 
 # im = Image.open(r"C:\Users\olive\OneDrive\Pictures\Screenshots\Screenshot 2024-07-31 235248.png")
-im = Image.open(r"C:\Users\olive\OneDrive\Pictures\Screenshots\Screenshot 2024-07-31 225906.png")
+im = Image.open(r"C:\Users\olive\OneDrive\Pictures\Screenshots\Screenshot 2024-08-01 021755.png")
 sqrWidth = np.ceil(np.sqrt(im.size[0]*im.size[1])).astype(int)
 im = im.resize((sqrWidth, sqrWidth))
 
-N = 100
+N = 50
 
 im = im.resize((N, N))
 
