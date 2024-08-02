@@ -6,6 +6,10 @@ from pynput import keyboard
 N = 0
 T0 = 0
 
+# FEATURE FLAGS
+PREPROCESSING_1 = True
+PREPROCESSING_2 = True
+
 def T(arr):
     return list(zip(*arr))
 
@@ -33,9 +37,19 @@ def prettyPrintBoard(board, rows=None, cols=None, jump=True):
                 try:
                     if i == len(col) - 1:
                         raise IndexError  # (lol)
-                    print(col[i], end='')
+                    print(str(col[i])[0], end='')
                 except IndexError:
                     print(' ', end='')
+            print()
+            for j, col in enumerate(cols):
+                try:
+                    if i == len(col) - 1:
+                        raise IndexError  # (lol)
+                    print(str(col[i])[1], end='')
+                except IndexError:
+                    print(' ', end='')
+            
+            print()
             print()
 
 def rowColParse(inputStr):
@@ -209,160 +223,163 @@ def isValid(board, rows, cols, row, col, rowRange=1):
     return True
 
 def preprocessing(board, rows, cols):
-    # any that are definitely correct should be entered
-    for i in range(len(rows)):
-        rowRule = rows[i]
-        totalDist = sum(rowRule) + len(rowRule) - 2
-        if totalDist == N:
-            pos = 0
-            for item in rowRule[:-1]:
-                for _ in range(item):
-                    board[pos][i] = 0b111
-                    pos += 1
 
-                try:
-                    board[pos][i] = 0b110
-                    pos += 1
-                except IndexError:
-                    break  # should already break, just for safety (and silent crashing D:)
-        elif totalDist <= 0:
-            for j in range(N):
-                board[j][i] = 0b110
-        else:
-            # b0 overlap
-            b0posA = rowRule[0] - 1
-            b0posB = N - (sum(rowRule) + len(rowRule) - 2)
-            if b0posB < b0posA:
-                for j in range(b0posB, b0posA + 1):
-                    board[j][i] = 0b111
-            
-            #bn-1 overlap
-            bnm1posA = N - rowRule[-2]
-            bnm1posB = sum(rowRule) + len(rowRule) - 3
-            if bnm1posA < bnm1posB:
-                for j in range(bnm1posA, bnm1posB + 1):
-                    board[j][i] = 0b111
+    if PREPROCESSING_1:
+        # any that are definitely correct should be entered
+        for i in range(len(rows)):
+            rowRule = rows[i]
+            totalDist = sum(rowRule) + len(rowRule) - 2
+            if totalDist == N:
+                pos = 0
+                for item in rowRule[:-1]:
+                    for _ in range(item):
+                        board[pos][i] = 0b111
+                        pos += 1
 
-    for i in range(len(cols)):
-        rowRule = cols[i]
-        totalDist = sum(rowRule) + len(rowRule) - 2
-        if totalDist == N:
-            pos = 0
-            for item in rowRule[:-1]:
-                for _ in range(item):
-                    board[i][pos] = 0b111
-                    pos += 1
-
-                try:
-                    board[i][pos] = 0b110
-                    pos += 1
-                except IndexError:
-                    break  # should already break, just for safety (and silent crashing D:)
-        elif totalDist <= 0:
-            for j in range(N):
-                board[i][j] = 0b110
-        else:
-            # b0 overlap
-            b0posA = rowRule[0] - 1
-            b0posB = N - (sum(rowRule) + len(rowRule) - 2)
-            if b0posB < b0posA:
-                for j in range(b0posB, b0posA + 1):
-                    board[i][j] = 0b111
-            
-            #bn-1 overlap
-            bnm1posA = N - rowRule[-2]
-            bnm1posB = sum(rowRule) + len(rowRule) - 3
-            if bnm1posA < bnm1posB:
-                for j in range(bnm1posA, bnm1posB + 1):
-                    board[i][j] = 0b111
-
-    for i in range(len(rows)):  # we go agane
-        rowRule = rows[i]
-        totalDist = sum(rowRule) + len(rowRule) - 2
-        if 0 < totalDist < N:
-            # b0
-            rule = rowRule[0]
-
-            b0 = -1
-            p0 = -1
-            start = True
-            for j in range(rule):
-                if board[j][i] == 0b111 and start:
-                    start = False
-                    p0 = j
-                elif board[j][i] == 0b110:
-                    b0 = j
-
-            if p0 != -1:
-                for j in range(p0, rule + b0 + 1):  # eek
-                    board[j][i] = 0b111
-
-                if p0 == 0:
-                    board[rule + b0 + 1][i] = 0b110
+                    try:
+                        board[pos][i] = 0b110
+                        pos += 1
+                    except IndexError:
+                        break  # should already break, just for safety (and silent crashing D:)
+            elif totalDist <= 0:
+                for j in range(N):
+                    board[j][i] = 0b110
+            else:
+                # b0 overlap
+                b0posA = rowRule[0] - 1
+                b0posB = N - (sum(rowRule) + len(rowRule) - 2)
+                if b0posB < b0posA:
+                    for j in range(b0posB, b0posA + 1):
+                        board[j][i] = 0b111
                 
-            # bn-1
-            rule = rowRule[-2]
+                #bn-1 overlap
+                bnm1posA = N - rowRule[-2]
+                bnm1posB = sum(rowRule) + len(rowRule) - 3
+                if bnm1posA < bnm1posB:
+                    for j in range(bnm1posA, bnm1posB + 1):
+                        board[j][i] = 0b111
 
-            bnm1 = -1
-            pnm1 = -1
-            start = True
-            for j in range(N - 1, N - rule - 1, -1):
-                if board[j][i] == 0b111 and start:
-                    start = False
-                    pnm1 = j
-                elif board[j][i] == 0b110:
-                    bnm1 = j
-            
-            if pnm1 != -1:
-                for j in range(pnm1, N - rule - bnm1 - 2, -1):
-                    board[j][i] = 0b111
+        for i in range(len(cols)):
+            rowRule = cols[i]
+            totalDist = sum(rowRule) + len(rowRule) - 2
+            if totalDist == N:
+                pos = 0
+                for item in rowRule[:-1]:
+                    for _ in range(item):
+                        board[i][pos] = 0b111
+                        pos += 1
+
+                    try:
+                        board[i][pos] = 0b110
+                        pos += 1
+                    except IndexError:
+                        break  # should already break, just for safety (and silent crashing D:)
+            elif totalDist <= 0:
+                for j in range(N):
+                    board[i][j] = 0b110
+            else:
+                # b0 overlap
+                b0posA = rowRule[0] - 1
+                b0posB = N - (sum(rowRule) + len(rowRule) - 2)
+                if b0posB < b0posA:
+                    for j in range(b0posB, b0posA + 1):
+                        board[i][j] = 0b111
                 
-                if pnm1 == N - 1:
-                    board[N - rule - bnm1 - 2][i] = 0b110
+                #bn-1 overlap
+                bnm1posA = N - rowRule[-2]
+                bnm1posB = sum(rowRule) + len(rowRule) - 3
+                if bnm1posA < bnm1posB:
+                    for j in range(bnm1posA, bnm1posB + 1):
+                        board[i][j] = 0b111
 
-    for i in range(len(cols)):  # we go agane
-        rowRule = cols[i]
-        totalDist = sum(rowRule) + len(rowRule) - 2
-        if 0 < totalDist < N:
-            # b0
-            rule = rowRule[0]
+    if PREPROCESSING_2:
+        for i in range(len(rows)):  # we go agane
+            rowRule = rows[i]
+            totalDist = sum(rowRule) + len(rowRule) - 2
+            if 0 < totalDist < N:
+                # b0
+                rule = rowRule[0]
 
-            b0 = -1
-            p0 = -1
-            start = True
-            for j in range(rule):
-                if board[i][j] == 0b111 and start:
-                    start = False
-                    p0 = j
-                elif board[i][j] == 0b110:
-                    b0 = j
+                b0 = -1
+                p0 = -1
+                start = True
+                for j in range(rule):
+                    if board[j][i] == 0b111 and start:
+                        start = False
+                        p0 = j
+                    elif board[j][i] == 0b110 and start:
+                        b0 = j
 
-            if p0 != -1:
-                for j in range(p0, rule + b0 + 1):  # eek
-                    board[i][j] = 0b111
+                if p0 != -1:
+                    for j in range(p0, rule + b0 + 1):  # eek
+                        board[j][i] = 0b111
+
+                    if p0 == 0:
+                        board[rule + b0 + 1][i] = 0b110
+                    
+                # bn-1
+                rule = rowRule[-2]
+
+                bnm1 = -1
+                pnm1 = -1
+                start = True
+                for j in range(N - 1, N - rule - 1, -1):
+                    if board[j][i] == 0b111 and start:
+                        start = False
+                        pnm1 = j
+                    elif board[j][i] == 0b110 and start:
+                        bnm1 = j
                 
-                if p0 == 0:
-                    board[rule + b0 + 1][i] = 0b110
+                if pnm1 != -1:
+                    for j in range(pnm1, N - rule - bnm1 - 2, -1):
+                        board[j][i] = 0b111
+                    
+                    if pnm1 == N - 1:
+                        board[N - rule - bnm1 - 2][i] = 0b110
 
-            # bn-1
-            rule = rowRule[-2]
+        for i in range(len(cols)):  # we go agane
+            rowRule = cols[i]
+            totalDist = sum(rowRule) + len(rowRule) - 2
+            if 0 < totalDist < N:
+                # b0
+                rule = rowRule[0]
 
-            bnm1 = -1
-            pnm1 = -1
-            start = True
-            for j in range(N - 1, N - rule - 1, -1):
-                if board[i][j] == 0b111 and start:
-                    start = False
-                    pnm1 = j
-                elif board[i][j] == 0b110:
-                    bnm1 = j
-            
-            if pnm1 != -1:
-                for j in range(pnm1, N - rule - bnm1 - 2, -1):
-                    board[i][j] = 0b111
+                b0 = -1
+                p0 = -1
+                start = True
+                for j in range(rule):
+                    if board[i][j] == 0b111 and start:
+                        start = False
+                        p0 = j
+                    elif board[i][j] == 0b110 and start:
+                        b0 = j
 
-                if pnm1 == N - 1:
-                    board[i][N - rule - bnm1 - 2] = 0b110
+                if p0 != -1:
+                    for j in range(p0, rule + b0 + 1):  # eek
+                        board[i][j] = 0b111
+                    
+                    if p0 == 0:
+                        board[i][rule + b0 + 1] = 0b110
+
+                # bn-1
+                rule = rowRule[-2]
+
+                bnm1 = -1
+                pnm1 = -1
+                start = True
+                for j in range(N - 1, N - rule - 1, -1):
+                    if board[i][j] == 0b111 and start:
+                        start = False
+                        pnm1 = j
+                    elif board[i][j] == 0b110 and start:
+                        bnm1 = j
+                
+                if pnm1 != -1:
+                    for j in range(pnm1, N - rule - bnm1 - 2, -1):
+                        board[i][j] = 0b111
+
+                    if pnm1 == N - 1:
+                        board[i][N - rule - bnm1 - 2] = 0b110
 
 
     # quit()
