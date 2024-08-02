@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import time
 from pynput import keyboard
+import copy
 
 N = 0
 T0 = 0
@@ -490,6 +491,30 @@ def preprocessing(board, rows, cols):
                             board[j][i] = 0b110
                     else:
                         break  # can't tell what goes in this block without more logic
+        
+            # (occasionally) very important edge case: longest non-full block can only fit one of the rules, in which case wham in as much as possible
+            # note: damages blocks!
+            tempRowRule = copy.deepcopy(rowRule)
+            toRemove = []
+            for block in blocks:
+                if block[1] - block[0] == block[2]:
+                    tempRowRule.remove(block[2])
+                    toRemove.append(block)
+            
+            for item in toRemove:
+                blocks.remove(item)
+            
+            largestCanFitIn = []
+            for block in blocks:
+                if max(tempRowRule) <= block[1] - block[0]:
+                    largestCanFitIn.append([block, max(tempRowRule)])
+            
+            if len(largestCanFitIn) == 1:
+                pa = largestCanFitIn[0][0][0] + largestCanFitIn[0][1]
+                pb = largestCanFitIn[0][0][1] - largestCanFitIn[0][1]
+
+                for j in range(pb, pa):
+                    board[j][i] = 0b111
             
         for i in range(len(cols)):
             rowRule = cols[i]
@@ -542,6 +567,30 @@ def preprocessing(board, rows, cols):
                             board[i][j] = 0b110
                     else:
                         break  # can't tell what goes in this block without more logic
+            
+            # (occasionally) very important edge case: longest non-full block can only fit one of the rules, in which case wham in as much as possible
+            # note: damages blocks!
+            tempRowRule = copy.deepcopy(rowRule)
+            toRemove = []
+            for block in blocks:
+                if block[1] - block[0] == block[2]:
+                    tempRowRule.remove(block[2])
+                    toRemove.append(block)
+            
+            for item in toRemove:
+                blocks.remove(item)
+            
+            largestCanFitIn = []
+            for block in blocks:
+                if max(tempRowRule) <= block[1] - block[0]:
+                    largestCanFitIn.append([block, max(tempRowRule)])
+            
+            if len(largestCanFitIn) == 1:
+                pa = largestCanFitIn[0][0][0] + largestCanFitIn[0][1]
+                pb = largestCanFitIn[0][0][1] - largestCanFitIn[0][1]
+
+                for j in range(pb, pa):
+                    board[i][j] = 0b111
 
     # if PREPROCESSING_3: # need more checks sadge, to fix
     #     for i in range(len(rows)):  # we go agane agane - searching for blocks that are closed on one end and open on the other
