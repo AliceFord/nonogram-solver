@@ -11,6 +11,7 @@ PREPROCESSING_1A = True
 PREPROCESSING_1B = True
 PREPROCESSING_2 = True
 PREPROCESSING_3 = True
+PREPROCESSING_4 = True
 
 def T(arr):
     return list(zip(*arr))
@@ -436,6 +437,111 @@ def preprocessing(board, rows, cols):
                     for j in range(N):
                         if ~board[i][j] & 0b10:
                             board[i][j] = 0b110
+                
+    if PREPROCESSING_4:  # move from x to x looking for block size. If block too small fill with x's, else keep track
+        for i in range(len(rows)):
+            rowRule = rows[i]
+            current = 0
+            blocks = [[0, 0, 0]]  # blocks[2]: -1 init, else sum of 0b111 in block
+
+            for j in range(N):
+                item = board[j][i]
+                if item & 0b1:
+                    current += 1
+                    blocks[-1][2] += 1
+                elif ~item &0b10:
+                    current += 1
+                else:
+                    if current != 0:
+                        blocks[-1][1] = j  # exclusive on top
+                        blocks.append([j + 1, j + 1, 0])  # inclusive on bottom
+                        current = 0
+                    else:
+                        blocks[-1] = [j + 1, j + 1, 0]
+            
+            if current != 0:
+                blocks[-1][1] = N
+
+            rc = 0
+            for block in blocks:
+                if block[1] - block[0] == rowRule[rc] and block[2] == rowRule[rc]:
+                    rc += 1
+                elif block[1] - block[0] == rowRule[rc] and block[2] < rowRule[rc] and block[2] > 0:
+                    rc += 1
+                    for j in range(block[0], block[1]):
+                        board[j][i] = 0b111
+                    
+                    # print("FILLED", rowRule, block[0], block[1])
+                elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks
+                    rc += 1
+                    for j in range(block[0], block[1]):
+                        board[j][i] |= 0b110
+                    
+                    # print("EMPTIED", rowRule, block[0], block[1])
+
+                else:
+                    if block[1] - block[0] < rowRule[rc]:
+                        if block[2] > 0:
+                            print(block, rowRule)
+                            print("OOPS")
+                            quit()
+                        
+                        for j in range(block[0], block[1]):
+                            board[j][i] = 0b110
+                    else:
+                        break  # can't tell what goes in this block without more logic
+            
+        for i in range(len(cols)):
+            rowRule = cols[i]
+            current = 0
+            blocks = [[0, 0, 0]]  # blocks[2]: -1 init, else sum of 0b111 in block
+
+            for j in range(N):
+                item = board[i][j]
+                if item & 0b1:
+                    current += 1
+                    blocks[-1][2] += 1
+                elif ~item &0b10:
+                    current += 1
+                else:
+                    if current != 0:
+                        blocks[-1][1] = j  # exclusive on top
+                        blocks.append([j + 1, j + 1, 0])  # inclusive on bottom
+                        current = 0
+                    else:
+                        blocks[-1] = [j + 1, j + 1, 0]
+            
+            if current != 0:
+                blocks[-1][1] = N
+
+            rc = 0
+            for block in blocks:
+                if block[1] - block[0] == rowRule[rc] and block[2] == rowRule[rc]:
+                    rc += 1
+                elif block[1] - block[0] == rowRule[rc] and block[2] < rowRule[rc] and block[2] > 0:
+                    rc += 1
+                    for j in range(block[0], block[1]):
+                        board[i][j] = 0b111
+                    
+                    # print("FILLED", rowRule, block[0], block[1])
+                elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks
+                    rc += 1
+                    for j in range(block[0], block[1]):
+                        board[i][j] |= 0b110
+                    
+                    # print("EMPTIED", rowRule, block[0], block[1])
+
+                else:
+                    if block[1] - block[0] < rowRule[rc]:
+                        if block[2] > 0:
+                            print(block, rowRule)
+                            print("OOPS")
+                            quit()
+                        
+                        for j in range(block[0], block[1]):
+                            board[i][j] = 0b110
+                    else:
+                        break  # can't tell what goes in this block without more logic
 
     # if PREPROCESSING_3: # need more checks sadge, to fix
     #     for i in range(len(rows)):  # we go agane agane - searching for blocks that are closed on one end and open on the other
@@ -519,8 +625,18 @@ def recur(board, rows, cols, currentPos):
     # print(row, ' ' * 20)
     # print(col, ' ' * 20)
 
-    if board[row][col] & 0b100:  # if its definitely correct then leave it alone
-        recur(board, rows, cols, currentPos + 1)
+    if board[row][col] & 0b100:  # if its definitely correct then leave it alone, do it for a lot to save function calls
+        while board[row][col] & 0b100:
+            currentPos += 1
+            row = currentPos % N
+            col = currentPos // N
+
+            if currentPos == N**2:
+                prettyPrintBoard(board)
+
+                print(time.time() - T0)
+                quit()
+        recur(board, rows, cols, currentPos)
         return
 
     # blocks:
