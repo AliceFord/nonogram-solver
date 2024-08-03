@@ -3,6 +3,7 @@ import sys
 import time
 from pynput import keyboard
 import copy
+from PIL import Image
 
 N = 0
 T0 = 0
@@ -16,6 +17,21 @@ PREPROCESSING_4 = True
 
 def T(arr):
     return list(zip(*arr))
+
+def checkBoardAgainstRef(board, refFile):
+    im = Image.open(refFile)
+    pix = im.load()
+
+    for i in range(N):
+        for j in range(N):
+            if ~board[i][j] & 0b10:
+                pass
+            elif pix[i, j] == 0 and ~board[i][j] & 0b1:
+                pass
+            elif pix[i, j] == 255 and board[i][j] & 0b1:
+                pass
+            else:
+                print("ERROR", i, j)
 
 def prettyPrintBoard(board, rows=None, cols=None, jump=True):
     if jump:
@@ -407,8 +423,15 @@ def preprocessing(board, rows, cols):
                         else:
                             failed = True
                             break
-            
-            if not failed:
+            if current != 0:
+                if current == rowRule[rc]:
+                    rc += 1
+                    current = 0
+                else:
+                    failed = True
+                    break
+                        
+            if not failed and rc == len(rowRule) - 1:
                 if (current == 0 or current == rowRule[rc]) and rc == len(rowRule) - 2:
                     for j in range(N):
                         if ~board[j][i] & 0b10:
@@ -432,8 +455,16 @@ def preprocessing(board, rows, cols):
                         else:
                             failed = True
                             break
-            
-            if not failed:
+                    
+            if current != 0:
+                if current == rowRule[rc]:
+                    rc += 1
+                    current = 0
+                else:
+                    failed = True
+                    break
+                        
+            if not failed and rc == len(rowRule) - 1:
                 if (current == 0 or current == rowRule[rc]) and rc == len(rowRule) - 2:
                     for j in range(N):
                         if ~board[i][j] & 0b10:
@@ -473,10 +504,10 @@ def preprocessing(board, rows, cols):
                         board[j][i] = 0b111
                     
                     # print("FILLED", rowRule, block[0], block[1])
-                elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks
-                    rc += 1
-                    for j in range(block[0], block[1]):
-                        board[j][i] |= 0b110
+                # elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks
+                #     rc += 1
+                #     for j in range(block[0], block[1]):
+                #         board[j][i] |= 0b110
                     
                     # print("EMPTIED", rowRule, block[0], block[1])
 
@@ -549,12 +580,12 @@ def preprocessing(board, rows, cols):
                         board[i][j] = 0b111
                     
                     # print("FILLED", rowRule, block[0], block[1])
-                elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks
-                    rc += 1
-                    for j in range(block[0], block[1]):
-                        board[i][j] |= 0b110
+                # elif block[2] == rowRule[rc]:  # fill any unfilled squares with blanks - oof'd
+                #     rc += 1
+                #     for j in range(block[0], block[1]):
+                #         board[i][j] |= 0b110
                     
-                    # print("EMPTIED", rowRule, block[0], block[1])
+                #     print("EMPTIED", rowRule, block[0], block[1])
 
                 else:
                     if block[1] - block[0] < rowRule[rc]:
@@ -570,27 +601,27 @@ def preprocessing(board, rows, cols):
             
             # (occasionally) very important edge case: longest non-full block can only fit one of the rules, in which case wham in as much as possible
             # note: damages blocks!
-            tempRowRule = copy.deepcopy(rowRule)
-            toRemove = []
-            for block in blocks:
-                if block[1] - block[0] == block[2]:
-                    tempRowRule.remove(block[2])
-                    toRemove.append(block)
+            # tempRowRule = copy.deepcopy(rowRule)
+            # toRemove = []
+            # for block in blocks:
+            #     if block[1] - block[0] == block[2]:
+            #         tempRowRule.remove(block[2])
+            #         toRemove.append(block)
             
-            for item in toRemove:
-                blocks.remove(item)
+            # for item in toRemove:
+            #     blocks.remove(item)
             
-            largestCanFitIn = []
-            for block in blocks:
-                if max(tempRowRule) <= block[1] - block[0]:
-                    largestCanFitIn.append([block, max(tempRowRule)])
+            # largestCanFitIn = []
+            # for block in blocks:
+            #     if max(tempRowRule) <= block[1] - block[0]:
+            #         largestCanFitIn.append([block, max(tempRowRule)])
             
-            if len(largestCanFitIn) == 1:
-                pa = largestCanFitIn[0][0][0] + largestCanFitIn[0][1]
-                pb = largestCanFitIn[0][0][1] - largestCanFitIn[0][1]
+            # if len(largestCanFitIn) == 1:
+            #     pa = largestCanFitIn[0][0][0] + largestCanFitIn[0][1]
+            #     pb = largestCanFitIn[0][0][1] - largestCanFitIn[0][1]
 
-                for j in range(pb, pa):
-                    board[i][j] = 0b111
+            #     for j in range(pb, pa):
+            #         board[i][j] = 0b111
 
     # if PREPROCESSING_3: # need more checks sadge, to fix
     #     for i in range(len(rows)):  # we go agane agane - searching for blocks that are closed on one end and open on the other
@@ -793,6 +824,7 @@ def solve():
 
     preprocessing(board, rows, cols)
     # prettyPrintBoard(board, rows, cols, jump=False)
+    # checkBoardAgainstRef(board, "10.png")
     # quit()
 
     recur(board, rows, cols, 0)
